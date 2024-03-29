@@ -2,13 +2,21 @@ function _init()
   add_paddle(
     55, 96, function(e)
       if btn(0) then
-        e.time_btn_pressed = t()
         e.vx = -1
       elseif btn(1) then
-        e.time_btn_pressed = t()
         e.vx = 1
       else
         e.vx = e.vx / 1.25
+      end
+      -- iterate over each sprite in the paddle
+      for _, spritepos in pairs(e.sprites) do
+        -- recalculate from the paddle's relative tile position to the world pixel position
+        pos = { x = e.x + spritepos.x * 8, y = e.y + spritepos.y * 8, mapcollide = spritepos.mapcollide, worldboundscollide = e.worldboundscollide }
+        collision = collide(pos)
+        if collision.world or collision.map then
+          e.vx = -e.vx * 3
+          break
+        end
       end
       e.x += e.vx
     end
@@ -22,7 +30,7 @@ function _update60()
 end
 
 function _draw()
-  cls()
+  cls(12)
   map()
   draw_balls(scene)
   draw_paddle(scene)
@@ -46,8 +54,8 @@ draw_rects = system(
 
 draw_paddle = system(
   { "paddle", "sprites" }, function(e)
-    for i = 1, #e.sprites do
-      spr(e.sprites[i], e.x + (i - 1) * 8, e.y)
+    for spritenum, spritepos in pairs(e.sprites) do
+      spr(spritenum, e.x + spritepos.x * 8, e.y + spritepos.y * 8)
     end
   end
 )
@@ -101,7 +109,12 @@ function add_paddle(x, y, updatefn)
     vx = 0,
     vy = 0,
     color = color,
-    sprites = { 2, 3 },
+    worldboundscollide = true,
+    mapcollide = true,
+    sprites = {
+      [1] = { x = 0, y = 0, mapcollide = true },
+      [2] = { x = 1, y = 0, mapcollide = true }
+    },
     updatefn = updatefn
   }
   add(scene, paddle)
